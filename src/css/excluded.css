@@ -1,0 +1,256 @@
+/* ============================================================
+   excluded.css — Styles for the Excluded URLs management page
+   ============================================================ */
+
+/* ---- Page description ---- */
+.ex-description {
+  color: #666;
+  margin-bottom: 1.6rem;
+  font-size: 1.4rem;
+}
+
+/* ---- Add-rule form ---- */
+.ex-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: 680px;
+}
+
+.ex-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ex-field-group label {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #555;
+}
+
+.ex-input {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1.4rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  transition: border-color 0.15s;
+}
+
+.ex-input:focus {
+  outline: none;
+  border-color: #3477db;
+  box-shadow: 0 0 0 2px rgba(52, 119, 219, 0.18);
+}
+
+.ex-select {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  font-size: 1.4rem;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.ex-add-actions {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  padding: 0.6rem 1.4rem;
+  font-size: 1.4rem;
+  font-family: inherit;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.btn:hover   { opacity: 0.88; }
+.btn:active  { opacity: 0.75; }
+
+.btn-primary   { background: #3477db; color: #fff; }
+.btn-secondary { background: #e8e8e8; color: #333; }
+.btn-danger    { background: #d9534f; color: #fff; }
+
+/* ---- Feedback messages ---- */
+.ex-feedback {
+  font-size: 1.3rem;
+  min-height: 2rem;
+  transition: color 0.2s;
+}
+
+.ex-feedback--success { color: #2e7d32; }
+.ex-feedback--error   { color: #c62828; }
+
+/* ---- Test section ---- */
+.ex-test-row {
+  display: flex;
+  gap: 1rem;
+  max-width: 680px;
+}
+
+.ex-test-input {
+  flex: 1;
+}
+
+.ex-test-result {
+  margin-top: 0.8rem;
+  font-size: 1.4rem;
+  font-weight: 500;
+  min-height: 2.2rem;
+}
+
+.ex-test-result--match    { color: #2e7d32; }
+.ex-test-result--no-match { color: #555; }
+
+/* ---- Rule count badge ---- */
+.ex-count {
+  font-size: 1.3rem;
+  font-weight: 400;
+  color: #888;
+}
+
+/* ---- Empty state ---- */
+.ex-empty {
+  padding: 2rem 0;
+  color: #999;
+  font-size: 1.4rem;
+}
+
+/* ---- Rule list ---- */
+.ex-rule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 680px;
+}
+
+.ex-rule-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.ex-rule-item:last-child {
+  border-bottom: none;
+}
+
+/* ---- Type badge ---- */
+.ex-badge {
+  flex-shrink: 0;
+  display: inline-block;
+  padding: 0.15em 0.6em;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  min-width: 6.5rem;
+  text-align: center;
+}
+
+.ex-badge--contains        { background: #e8f0fe; color: #1a73e8; }
+.ex-badge--domain-wildcard { background: #e6f4ea; color: #1e7e34; }
+.ex-badge--exact-page      { background: #fce8e6; color: #c5221f; }
+.ex-badge--regex           { background: #f3e5f5; color: #7b1fa2; }
+
+/* ---- Rule label ---- */
+.ex-rule-label {
+  flex: 1;
+  font-size: 1.4rem;
+  font-family: 'Courier New', Courier, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #333;
+}
+
+/* ---- Remove button ---- */
+.ex-remove-btn {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #bbb;
+  font-size: 1.5rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+
+.ex-remove-btn:hover {
+  color: #d9534f;
+  background: #fce8e6;
+}
+
+/* ---- Bulk actions ---- */
+.ex-bulk-actions {
+  margin-top: 1.6rem;
+}
+
+/* ---- Confirm overlay ---- */
+.ex-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.ex-dialog {
+  background: #fff;
+  border-radius: 6px;
+  padding: 2.4rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+}
+
+.ex-dialog p {
+  margin: 0 0 2rem;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: #333;
+}
+
+.ex-dialog-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+/* ============================================================
+   Dark mode
+   ============================================================ */
+body.dark .ex-description      { color: #aaa; }
+body.dark .ex-field-group label { color: #ccc; }
+body.dark .ex-input,
+body.dark .ex-select            { background: #2a2a2a; border-color: #555; color: #eee; }
+body.dark .ex-input:focus       { border-color: #5a9cf8; box-shadow: 0 0 0 2px rgba(90,156,248,0.2); }
+body.dark .ex-rule-item         { border-bottom-color: #3a3a3a; }
+body.dark .ex-rule-label        { color: #ccc; }
+body.dark .ex-empty             { color: #666; }
+body.dark .ex-count             { color: #777; }
+body.dark .btn-secondary        { background: #3a3a3a; color: #ddd; }
+body.dark .ex-dialog            { background: #2a2a2a; }
+body.dark .ex-dialog p          { color: #ddd; }
+body.dark .ex-remove-btn        { color: #666; }
+body.dark .ex-remove-btn:hover  { color: #e57373; background: #3a2020; }

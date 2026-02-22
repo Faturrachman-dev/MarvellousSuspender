@@ -92,12 +92,21 @@ module.exports = function(grunt) {
       },
     },
     clean: ['<%= config.tempDir %>'],
+    watch: {
+      // Re-copy and re-apply debug strings on any src change
+      src: {
+        files: ['src/**/*', '!src/**/*.xcf'],
+        tasks: ['copy', 'string-replace:debugon'],
+        options: { spawn: false },
+      },
+    },
   });
 
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-string-replace');
   grunt.loadNpmTasks('grunt-crx');
   grunt.loadNpmTasks('grunt-contrib-clean');
+  grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.registerTask('default', [
     'copy',
     'string-replace:debugoff',
@@ -112,5 +121,11 @@ module.exports = function(grunt) {
     'crx:public',
     'crx:private',
     'clean',
+  ]);
+  // Dev watch mode: copy to temp dir with debug on, then watch for changes
+  grunt.registerTask('dev', [
+    'copy',
+    'string-replace:debugon',
+    'watch',
   ]);
 };

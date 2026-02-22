@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <link type="text/css" href="css/fontello.css" rel="stylesheet">
+  <link type="text/css" href="css/style.css" rel="stylesheet">
+  <link type="text/css" href="css/excluded.css" rel="stylesheet">
+  <script type="module" src="js/excluded.js"></script>
+  <title data-i18n="__MSG_ext_extension_name__"></title>
+</head>
+<body>
+
+<div class="mainContent">
+
+  <div class="pageHeader">
+    <h1 data-i18n="__MSG_ext_extension_name__"></h1>
+  </div>
+
+  <!-- Sidebar nav (matches options.html) -->
+  <div class="contentNav">
+    <ul>
+      <li>
+        <a href="options.html" data-i18n="__MSG_html_sidebar_general_settings__"></a>
+      </li>
+      <li>
+        <a class="active" href="excluded.html">Excluded URLs</a>
+      </li>
+      <li class="noIncognito">
+        <a href="history.html" data-i18n="__MSG_html_sidebar_session_management__"></a>
+      </li>
+      <li class="noIncognito">
+        <a href="shortcuts.html" data-i18n="__MSG_html_sidebar_shortcuts__"></a>
+      </li>
+      <li>
+        <a href="about.html" data-i18n="__MSG_html_sidebar_support__"></a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="content">
+
+    <!-- =========================================================
+         SECTION: Add new rule
+    ========================================================== -->
+    <div class="sub-section" id="addRuleSection">
+      <h2>Exclude a URL or domain</h2>
+      <p class="ex-description">
+        Matching tabs will <strong>never</strong> be automatically suspended.
+        Keyboard-shortcut and popup "Suspend now" actions still work.
+      </p>
+
+      <div class="ex-add-form">
+        <div class="ex-field-group">
+          <label for="exNewEntry">URL or pattern</label>
+          <input
+            type="text"
+            id="exNewEntry"
+            class="ex-input"
+            placeholder="e.g.  mail.google.com  or  *.spotify.com"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <div class="ex-field-group">
+          <label for="exMatchType">Match type</label>
+          <div class="select-wrapper">
+            <select id="exMatchType" class="ex-select">
+              <option value="contains">Contains — any URL that includes this text</option>
+              <option value="domain">Domain wildcard — all pages on this domain</option>
+              <option value="exact">Exact page — only this specific URL</option>
+              <option value="regex">Regex — advanced pattern /like this/</option>
+            </select>
+          </div>
+        </div>
+        <div class="ex-add-actions">
+          <button id="exAddFromCurrentBtn" class="btn btn-secondary" title="Pre-fill with the current tab's URL">
+            <i class="icon icon-globe"></i> Fill from current tab
+          </button>
+          <button id="exAddBtn" class="btn btn-primary">
+            <i class="icon icon-plus"></i> Add rule
+          </button>
+        </div>
+        <div id="exAddFeedback" class="ex-feedback" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- =========================================================
+         SECTION: Test a URL
+    ========================================================== -->
+    <div class="sub-section" id="testSection">
+      <h2>Test a URL</h2>
+      <div class="ex-test-row">
+        <input
+          type="text"
+          id="exTestUrl"
+          class="ex-input ex-test-input"
+          placeholder="Paste a URL to check whether it would be excluded…"
+          spellcheck="false"
+        />
+        <button id="exTestBtn" class="btn btn-secondary">Test</button>
+      </div>
+      <div id="exTestResult" class="ex-test-result" aria-live="polite"></div>
+    </div>
+
+    <!-- =========================================================
+         SECTION: Current rules
+    ========================================================== -->
+    <div class="sub-section" id="rulesSection">
+      <h2>Current exclusion rules <span id="exRuleCount" class="ex-count"></span></h2>
+
+      <div id="exEmptyState" class="ex-empty" style="display:none">
+        <p>No exclusion rules yet. Add one above.</p>
+      </div>
+
+      <!-- Rule list -->
+      <ul id="exRuleList" class="ex-rule-list" aria-label="Exclusion rules"></ul>
+
+      <div class="ex-bulk-actions">
+        <button id="exClearAllBtn" class="btn btn-danger" style="display:none">
+          <i class="icon icon-trash"></i> Remove all rules
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /.content -->
+</div><!-- /.mainContent -->
+
+<!-- Confirm dialog (zero-dependency inline) -->
+<div id="exConfirmOverlay" class="ex-overlay" style="display:none" role="dialog" aria-modal="true">
+  <div class="ex-dialog">
+    <p id="exConfirmMsg"></p>
+    <div class="ex-dialog-actions">
+      <button id="exConfirmOk" class="btn btn-danger">Remove</button>
+      <button id="exConfirmCancel" class="btn btn-secondary">Cancel</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

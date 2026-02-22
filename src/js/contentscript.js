@@ -9,20 +9,20 @@
 
   function formInputListener(event) {
     if (!isReceivingFormInput && !tempWhitelist) {
-      if (event.keyCode >= 48 && event.keyCode <= 90 && event.target.tagName) {
-        if (
-          event.target.tagName.toUpperCase() === 'INPUT' ||
-          event.target.tagName.toUpperCase() === 'TEXTAREA' ||
-          event.target.tagName.toUpperCase() === 'FORM' ||
-          event.target.isContentEditable === true ||
-          event.target.type === 'application/pdf'
-        ) {
-          isReceivingFormInput = true;
-          if (!isBackgroundConnectable()) {
-            return false;
-          }
-          chrome.runtime.sendMessage(buildReportTabStatePayload());
+      const tag = event.target && event.target.tagName && event.target.tagName.toUpperCase();
+      const isFormElement =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        tag === 'SELECT' ||
+        tag === 'FORM' ||
+        (event.target && event.target.isContentEditable === true);
+
+      if (isFormElement) {
+        isReceivingFormInput = true;
+        if (!isBackgroundConnectable()) {
+          return false;
         }
+        chrome.runtime.sendMessage(buildReportTabStatePayload());
       }
     }
   }
@@ -31,7 +31,12 @@
     if (isFormListenerInitialised) {
       return;
     }
+    // Listen on multiple event types so detection is not limited to printable keystrokes.
+    // 'input' catches paste, cut, autocomplete, and voice input;
+    // 'change' catches select/checkbox interactions.
     window.addEventListener('keydown', formInputListener);
+    window.addEventListener('input', formInputListener);
+    window.addEventListener('change', formInputListener);
     isFormListenerInitialised = true;
   }
 

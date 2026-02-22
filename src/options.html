@@ -34,6 +34,9 @@
       <li>
         <a class='active' href='options.html' data-i18n='__MSG_html_sidebar_general_settings__'></a>
       </li>
+      <li>
+        <a href='excluded.html' data-i18n='__MSG_html_sidebar_excluded_urls__'></a>
+      </li>
       <li class='noIncognito'>
         <a href='history.html' data-i18n='__MSG_html_sidebar_session_management__'></a>
       </li>
@@ -101,8 +104,9 @@
         <label for='onlineCheck' class='cbLabel' data-i18n='__MSG_html_options_suspend_only_connected__'></label>
       </div>
       <div class='formRow autoSuspendOption'>
-        <input type='checkbox' id='batteryCheck' class='option' />
+        <input type='checkbox' id='batteryCheck' class='option' disabled />
         <label for='batteryCheck' class='cbLabel' data-i18n='__MSG_html_options_suspend_only_on_battery__'></label>
+        <span class='gsNote' style='color:#999'>(not available in Chrome MV3)</span>
       </div>
       <div class='formRow autoSuspendOption'>
         <input type='checkbox' id='claimByDefault' class='option' />
@@ -111,19 +115,8 @@
 
       <div class='formRow autoSuspendOption'>
         <label id='whitelistLbl' for='whitelist' data-i18n='__MSG_html_options_whitelist_title__&nbsp;&nbsp;'></label>
-        <span data-i18n-tooltip='__MSG_html_options_whitelist_tooltip_line1__
-&nbsp;&nbsp;&nbsp;&nbsp;https://play.google.com/music/listen
-&nbsp;&nbsp;&nbsp;&nbsp;https://mail.google.com
-
-__MSG_html_options_whitelist_tooltip_line2__
-&nbsp;&nbsp;&nbsp;&nbsp;google.com
-
-__MSG_html_options_whitelist_tooltip_line3__
-&nbsp;&nbsp;&nbsp;&nbsp;/^https:.*google\.com/'>
-						<i class='tooltipIcon icon icon-help-circled'></i>
-					</span>
-        <textarea id='whitelist' class='option' rows='10' cols='50'></textarea>
-        <a id='testWhitelistBtn' href='#whitelistLbl' data-i18n='__MSG_html_options_whitelist_test__'></a>
+        <br />
+        <a href='excluded.html' class='option' style='display:inline-block; margin-top:6px;' data-i18n='__MSG_html_options_manage_excluded__'></a>
       </div>
     </div>
     <div class='sub-section'>
@@ -163,43 +156,6 @@ __MSG_html_options_suspend_discard_after_suspend_tooltip_line3b__'>
           </select>
         </div>
 
-      </div>
-
-      <div class='formRow'>
-        <label id='previewLbl' class='topLabel' for='preview'
-               data-i18n='__MSG_html_options_suspend_screen_capturing__:&nbsp;&nbsp;'></label>
-        <span data-i18n-tooltip='__MSG_html_options_suspend_screen_capturing_tooltip_line1a__
-__MSG_html_options_suspend_screen_capturing_tooltip_line1b__
-
-__MSG_html_options_suspend_screen_capturing_tooltip_line2a__
-__MSG_html_options_suspend_screen_capturing_tooltip_line2b__
-
-__MSG_html_options_suspend_screen_capturing_tooltip_line3a__
-__MSG_html_options_suspend_screen_capturing_tooltip_line3b__'>
-						<i class='tooltipIcon icon icon-help-circled'></i>
-					</span>
-        <br />
-        <div class='select-wrapper'>
-          <select id='preview' class='option'>
-            <option value='0' data-i18n='__MSG_html_options_suspend_screen_capturing_disabled__'></option>
-            <option value='1' data-i18n='__MSG_html_options_suspend_screen_capturing_screen_only__'></option>
-            <option value='2' data-i18n='__MSG_html_options_suspend_screen_capturing_entire_page__'></option>
-          </select>
-        </div>
-      </div>
-      <div class='formRow' id='forceScreenCaptureContainer'>
-        <input type='checkbox' id='forceScreenCapture' class='option' />
-        <label for='forceScreenCapture' class='cbLabel'
-               data-i18n='__MSG_html_options_suspend_force_screen_capture__&nbsp;&nbsp;'></label>
-        <span data-i18n-tooltip='__MSG_html_options_suspend_force_screen_capture_tooltip_line1__
-__MSG_html_options_suspend_force_screen_capture_tooltip_line2__
-__MSG_html_options_suspend_force_screen_capture_tooltip_line4__
-__MSG_html_options_suspend_force_screen_capture_tooltip_line5__
-
-__MSG_html_options_suspend_force_screen_capture_tooltip_line6__
-__MSG_html_options_suspend_force_screen_capture_tooltip_line7__'>
-						<i class='tooltipIcon icon icon-help-circled'></i>
-					</span>
       </div>
     </div>
     <div class='sub-section'>

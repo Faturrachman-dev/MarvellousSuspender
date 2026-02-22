@@ -1,6 +1,4 @@
-import  * as html2canvas        from './html2canvas.min.js';
 import  { gsChrome }              from './gsChrome.js';
-import  { gsIndexedDb }           from './gsIndexedDb.js';
 import  { gsMessages }            from './gsMessages.js';
 import  { gsStorage }             from './gsStorage.js';
 import  { gsTabCheckManager }     from './gsTabCheckManager.js';
@@ -20,15 +18,11 @@ export const gsTabSuspendManager = (function() {
   let _suspensionQueue;
 
   function initAsPromised() {
-    return new Promise(async function(resolve) {
-      const screenCaptureMode   = await gsStorage.getOption(gsStorage.SCREEN_CAPTURE);
-      const forceScreenCapture  = await gsStorage.getOption(gsStorage.SCREEN_CAPTURE_FORCE);
-      //TODO: This should probably update when the screencapture mode changes
-      const concurrentSuspensions = screenCaptureMode === '0' ? 5 : DEFAULT_CONCURRENT_SUSPENSIONS;
-      const suspensionTimeout = forceScreenCapture ? 5 * 60 * 1000 : DEFAULT_SUSPENSION_TIMEOUT;
+    return new Promise(function(resolve) {
+      // Screen capture removed — use fixed concurrency / timeout values.
       const queueProps = {
-        concurrentExecutors: concurrentSuspensions,
-        jobTimeout: suspensionTimeout,
+        concurrentExecutors: DEFAULT_CONCURRENT_SUSPENSIONS,
+        jobTimeout: DEFAULT_SUSPENSION_TIMEOUT,
         executorFn: performSuspension,
         exceptionFn: handleSuspensionException,
       };
@@ -86,55 +80,19 @@ export const gsTabSuspendManager = (function() {
       return;
     }
 
-    // If tab is in loading state, try to suspend early if possible
-    // Note: doing so will bypass a few checks below. Namely:
-    // - Any temporary pause flag that has been set up on the tab
-    // - It may lose any scrollPos value
-    // Although if the tab is still loading then pause and scroll pos should
-    // not be set?
-    // Do not bypass loading state if screen capture is required
-    let screenCaptureMode = await gsStorage.getOption(gsStorage.SCREEN_CAPTURE);
-    if (tab.status === 'loading') {
-      const savedTabInfo = await gsIndexedDb.fetchTabInfo(tab.url);
-      if (screenCaptureMode === '0' && savedTabInfo) {
-        const suspendedUrl = gsUtils.generateSuspendedUrl(
-          tab.url,
-          savedTabInfo.title,
-          0,
-        );
-        gsUtils.log( tab.id, QUEUE_ID, 'Interrupting tab loading to resuspend tab' );
-        const success = await executeTabSuspension(tab, suspendedUrl);
-        resolve(success);
-      } else {
-        requeue(3000, { refetchTab: true });
-      }
-      return;
-    }
-
-    const discardInPlaceOfSuspend = await gsStorage.getOption(gsStorage.DISCARD_IN_PLACE_OF_SUSPEND);
-    if (discardInPlaceOfSuspend) {
-      screenCaptureMode = '0';
-    }
-
+    // Query the content script for current tab state (form input, temp whitelist, scroll pos)
     let tabInfo = await getContentScriptTabInfo(tab);
 
-    // If tabInfo is null this is usually due to tab loading, being discarded or 'parked' on chrome restart
-    // If we need to make a screen capture and tab is not responding then reload it
-    // TODO: This doesn't actually seem to work
-    // Tabs that have just been reloaded usually fail to run the screen capture script :(
-    if (!tabInfo && screenCaptureMode !== '0' && !executionProps.reloaded) {
-      gsUtils.log( tab.id, QUEUE_ID, 'Tab is not responding. Will reload for screen capture.' );
-      await gsChrome.tabsUpdate(tab.id, { url: tab.url });
-      // allow up to 30 seconds for tab to reload and trigger its subsequent suspension request
-      // note that this will not reset the DEFAULT_SUSPENSION_TIMEOUT of 60 seconds
-      requeue(30000, { reloaded: true });
+    // FAIL-SAFE: if content script is unreachable in auto/soft mode, do NOT suspend.
+    // It is always safer to leave a tab running than risk destroying unsaved form data.
+    if (!tabInfo && executionProps.forceLevel >= 2) {
+      gsUtils.log( tab.id, QUEUE_ID, 'Content script unresponsive. Skipping suspension (fail-safe).' );
+      resolve(false);
       return;
     }
 
-    tabInfo = tabInfo || {
-      status: 'unknown',
-      scrollPos: '0',
-    };
+    // For force-level-1 (manual), use safe defaults when content script is unreachable
+    tabInfo = tabInfo || { status: 'unknown', scrollPos: '0' };
 
     const isEligible = checkContentScriptEligibilityForSuspension( tabInfo.status, executionProps.forceLevel, );
     if (!isEligible) {
@@ -143,61 +101,14 @@ export const gsTabSuspendManager = (function() {
       return;
     }
 
-    // Temporarily change tab.url to append youtube timestamp
+    // Append YouTube timestamp to URL if applicable (no DB needed — just a URL param)
     const timestampedUrl = await generateUrlWithYouTubeTimestamp(tab);
     // NOTE: This does not actually change the tab url, just the current tab object
     tab.url = timestampedUrl;
-    await saveSuspendData(tab);
 
     const suspendedUrl = gsUtils.generateSuspendedUrl( tab.url, tab.title, tabInfo.scrollPos, );
-    executionProps.suspendedUrl = suspendedUrl;
-
-    if (screenCaptureMode === '0') {
-      const success = await executeTabSuspension(tab, suspendedUrl);
-      resolve(success);
-      return;
-    }
-
-    // Hack. Save handle to resolve function so we can call it later
-    executionProps.resolveFn = resolve;
-    requestGeneratePreviewImage(tab); //async
-    gsUtils.log( tab.id, QUEUE_ID, 'Preview generation script started successfully.', );
-    // handlePreviewImageResponse is called on the 'savePreviewData' message response
-    // this will refetch the queued tabDetails and call executionProps.resolveFn(true)
-  }
-
-  async function handlePreviewImageResponse(tab, previewUrl, errorMsg) {
-    const queuedTabDetails = getQueuedTabDetails(tab);
-    if (!queuedTabDetails) {
-      gsUtils.log( tab.id, QUEUE_ID, 'Tab missing from suspensionQueue. Assuming suspension cancelled for this tab.', );
-      return;
-    }
-
-    const suspensionForceLevel = queuedTabDetails.executionProps.forceLevel;
-    if (!await checkTabEligibilityForSuspension(tab, suspensionForceLevel)) {
-      gsUtils.log( tab.id, QUEUE_ID, 'Tab is no longer eligible for suspension. Removing tab from suspensionQueue.', );
-      return;
-    }
-
-    // Temporarily change tab.url with that from the generated suspended url
-    // This is because for youtube tabs we manually change the url to persist timestamp
-    const timestampedUrl = gsUtils.getOriginalUrl(
-      queuedTabDetails.executionProps.suspendedUrl,
-    );
-    // NOTE: This does not actually change the tab url, just the current tab object
-    tab.url = timestampedUrl;
-
-    if (!previewUrl) {
-      gsUtils.warning( tab.id, QUEUE_ID, 'savePreviewData reported an error: ', errorMsg, );
-    } else {
-      await gsIndexedDb.addPreviewImage(tab.url, previewUrl);
-    }
-
-    const success = await executeTabSuspension(
-      tab,
-      queuedTabDetails.executionProps.suspendedUrl,
-    );
-    queuedTabDetails.executionProps.resolveFn(success);
+    const success = await executeTabSuspension(tab, suspendedUrl);
+    resolve(success);
   }
 
   function getQueuedTabDetails(tab) {
@@ -278,9 +189,8 @@ export const gsTabSuspendManager = (function() {
       if (await gsStorage.getOption(gsStorage.IGNORE_WHEN_OFFLINE) && !navigator.onLine) {
         return false;
       }
-      if (await gsStorage.getOption(gsStorage.IGNORE_WHEN_CHARGING) && await tgs.isCharging()) {
-        return false;
-      }
+      // Note: battery check (IGNORE_WHEN_CHARGING) is omitted — navigator.getBattery()
+      // is not available in MV3 service workers, making it non-functional.
       if (await gsStorage.getOption(gsStorage.SUSPEND_TIME) === '0') {
         return false;
       }
@@ -346,150 +256,12 @@ export const gsTabSuspendManager = (function() {
     });
   }
 
-  async function saveSuspendData(tab) {
-    const tabProperties = {
-      date: new Date(),
-      title: tab.title,
-      url: tab.url,
-      favIconUrl: tab.favIconUrl,
-      pinned: tab.pinned,
-      index: tab.index,
-      windowId: tab.windowId,
-    };
-    await gsIndexedDb.addSuspendedTabInfo(tabProperties);
-
-    // gsFavicon can't be loaded here since there's no DOM access yet
-    // const faviconMeta = await gsFavicon.buildFaviconMetaFromChrome( tab.url );
-    // if (faviconMeta) {
-    //   await gsFavicon.saveFaviconMetaToCache(tab.url, faviconMeta);
-    // }
-  }
-
-  async function requestGeneratePreviewImage(tab) {
-    const screenCaptureMode   = await gsStorage.getOption(gsStorage.SCREEN_CAPTURE);
-    const forceScreenCapture  = await gsStorage.getOption(gsStorage.SCREEN_CAPTURE_FORCE);
-    const screenCaptureLib = 'js/html2canvas.min.js';
-    gsUtils.log( tab.id, QUEUE_ID, `Injecting ${screenCaptureLib} into content script`, );
-    gsMessages.executeScriptOnTab(tab.id, screenCaptureLib, error => {
-      if (error) {
-        handlePreviewImageResponse(tab, null, 'Failed to executeScriptOnTab'); //async. unhandled promise.
-        return;
-      }
-      gsMessages.executeCodeOnTab(
-        tab.id,
-        [screenCaptureMode, forceScreenCapture],  // args for injection
-        async (mode, force) => { // code to inject
-
-
-          // NOTE: This function below is run within the content script scope
-          // Therefore it must be self contained and not refer to any external functions
-          // such as references to gsUtils etc.
-          // @TODO: Can we move this function into the main content script?
-
-          const MAX_CANVAS_HEIGHT = force ? 10000 : 5000;
-          const IMAGE_TYPE = 'image/webp';
-          const IMAGE_QUALITY = force ? 0.92 : 0.5;
-
-          let height = 0;
-          let width = 0;
-
-          //check where we need to capture the whole screen
-          if (mode === '2') {
-            height = Math.max(
-              window.innerHeight,
-              document.body.scrollHeight,
-              document.body.offsetHeight,
-              document.documentElement.clientHeight,
-              document.documentElement.scrollHeight,
-              document.documentElement.offsetHeight,
-            );
-            // cap the max height otherwise it fails to convert to a data url
-            height = Math.min(height, MAX_CANVAS_HEIGHT);
-          } else {
-            height = window.innerHeight;
-          }
-          width = document.body.clientWidth;
-
-          let generateCanvas;
-
-          // console.log('Generating via html2canvas..');
-          generateCanvas = () => {
-            return html2canvas(document.body, {
-              height: height,
-              width: width,
-              logging: false,
-              imageTimeout: 10000,
-              removeContainer: false,
-              async: true,
-            });
-          };
-
-
-          const isCanvasVisible = canvas => {
-            let ctx = canvas.getContext('2d');
-            let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-              const isTransparent = imageData.data[i + 3] === 0;
-              const isWhite =
-                imageData.data[i] === 255 &&
-                imageData.data[i + 1] === 255 &&
-                imageData.data[i + 2] === 255;
-              if (!isTransparent && !isWhite) {
-                return true;
-              }
-            }
-            return false;
-          };
-
-          const generateDataUrl = canvas => {
-            let dataUrl = canvas.toDataURL(IMAGE_TYPE, IMAGE_QUALITY);
-            if (!dataUrl || dataUrl === 'data:,') {
-              dataUrl = canvas.toDataURL();
-            }
-            if (dataUrl === 'data:,') {
-              dataUrl = null;
-            }
-            return dataUrl;
-          };
-
-          let dataUrl;
-          let errorMsg;
-          try {
-            const canvas = await generateCanvas();
-            if (!isCanvasVisible(canvas)) {
-              errorMsg = 'Canvas contains no visible pixels';
-            } else {
-              dataUrl = generateDataUrl(canvas);
-            }
-          } catch (err) {
-            errorMsg = err.message;
-          }
-          if (!dataUrl && !errorMsg) {
-            errorMsg = 'Failed to generate dataUrl';
-          }
-          // console.log('saving previewData..');
-          chrome.runtime.sendMessage({ action: 'savePreviewData', previewUrl: dataUrl, errorMsg: errorMsg, });
-
-
-        },  // end code to inject
-        (error) => {  // callback
-          if (error) {
-            handlePreviewImageResponse( tab, null, 'Failed to executeCodeOnTab: generatePreviewImgContentScript' ); //async. unhandled promise.
-            return;
-          }
-        },
-      );
-    });
-  }
-
 
   return {
     initAsPromised,
     queueTabForSuspension,
     queueTabForSuspensionAsPromise,
     unqueueTabForSuspension,
-    handlePreviewImageResponse,
-    saveSuspendData,
     checkTabEligibilityForSuspension,
     executeTabSuspension,
     getQueuedTabDetails,

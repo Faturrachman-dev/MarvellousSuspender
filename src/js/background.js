@@ -144,11 +144,6 @@ import  { tgs }                   from './tgs.js';
         }
         break;
       }
-      case 'savePreviewData' : {
-        await gsTabSuspendManager.handlePreviewImageResponse(sender.tab, request.previewUrl, request.errorMsg); // async. unhandled promise
-        break;
-      }
-
       case 'suspendOne' : {
         tgs.suspendHighlightedTab();
         break;
@@ -181,8 +176,8 @@ import  { tgs }                   from './tgs.js';
         tgs.whitelistHighlightedTab(true);
         break;
       }
-      case 'sessionManagerLink': {
-        await chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
+      case 'excludedLink': {
+        await chrome.tabs.create({ url: chrome.runtime.getURL('excluded.html') });
         break;
       }
       case 'settingsLink' : {
