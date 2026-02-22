@@ -1,6 +1,6 @@
-﻿# The Marvellous Suspender — Architecture & Documentation
+﻿# The Marvellous Suspender Lite — Architecture & Documentation
 
-> Current version: **8.1.3** · Manifest V3 · Minimum Chrome 110  
+> Current version: **8.1.4** · Manifest V3 · Minimum Chrome 110  
 > License: GNU GPLv2  
 > Fork of: [gioxx/MarvellousSuspender](https://github.com/gioxx/MarvellousSuspender) → [greatsuspender/thegreatsuspender](https://github.com/greatsuspender/thegreatsuspender)
 
@@ -32,7 +32,7 @@
 
 ## Overview
 
-**The Marvellous Suspender** is a Chromium browser extension that frees system resources (RAM, CPU) by automatically suspending inactive tabs after a configurable timeout. Suspended tabs are replaced with a lightweight HTML page that preserves the original URL, title, favicon, and scroll position. Users can unsuspend tabs with a single click, keyboard shortcut, or automatically on focus.
+**The Marvellous Suspender Lite** is a Chromium browser extension that frees system resources (RAM, CPU) by automatically suspending inactive tabs after a configurable timeout. Suspended tabs are replaced with a lightweight HTML page that preserves the original URL, title, favicon, and scroll position. Users can unsuspend tabs with a single click, keyboard shortcut, or automatically on focus.
 
 ---
 

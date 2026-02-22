@@ -1,8 +1,8 @@
-﻿# The Marvellous Suspender
+﻿# The Marvellous Suspender Lite
 
 [![Crowdin](https://badges.crowdin.net/tms/localized.svg)](https://crowdin.com/project/tms)
 
-**The Marvellous Suspender** is a free and open-source Google Chrome extension that frees system resources by automatically suspending inactive tabs. It is a privacy-respecting fork of [The Great Suspender](https://github.com/greatsuspender/thegreatsuspender) with no ads or tracking.
+**The Marvellous Suspender Lite** is a free and open-source Google Chrome extension that frees system resources by automatically suspending inactive tabs. It is a privacy-respecting fork of [The Great Suspender](https://github.com/greatsuspender/thegreatsuspender) with no ads or tracking.
 
 This repository is a further-simplified fork of [gioxx/MarvellousSuspender](https://github.com/gioxx/MarvellousSuspender), hardening the core suspension and exclusion mechanics while removing features that were broken in Manifest V3 or added unnecessary complexity.
 

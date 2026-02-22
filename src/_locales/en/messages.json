@@ -1,7 +1,7 @@
 {
-    "ext_extension_name": { "message": "The Marvellous Suspender" },
+    "ext_extension_name": { "message": "The Marvellous Suspender Lite" },
     "ext_extension_description": { "message": "Make your computer run smoothly by suspending the tabs you aren't using" },
-    "ext_default_title": { "message": "The Marvellous Suspender" },
+    "ext_default_title": { "message": "The Marvellous Suspender Lite" },
     "ext_cmd_toggle_tab_suspension_description": { "message": "Suspend/Unsuspend active tab" },
     "ext_cmd_toggle_tab_pause_description": { "message": "Pause/Unpause suspension of active tab" },
     "ext_cmd_suspend_selected_tabs_description": { "message": "Suspend selected tabs" },
