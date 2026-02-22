@@ -1,68 +1,120 @@
-# The Marvellous Suspender
+﻿# The Marvellous Suspender
 
 [![Crowdin](https://badges.crowdin.net/tms/localized.svg)](https://crowdin.com/project/tms)
 
-"**The Marvellous Suspender**" is a free and open-source Google Chrome extension for people who find that chrome is consuming too much system resource or suffer from frequent chrome crashing. Totally based on the original "[The Great Suspender](https://github.com/greatsuspender/thegreatsuspender)" but without ADS tracking and problems explained [in this GitHub issue](https://github.com/greatsuspender/thegreatsuspender/issues/1263).
+**The Marvellous Suspender** is a free and open-source Google Chrome extension that frees system resources by automatically suspending inactive tabs. It is a privacy-respecting fork of [The Great Suspender](https://github.com/greatsuspender/thegreatsuspender) with no ads or tracking.
 
-Once installed and enabled, this extension will automatically *suspend* tabs that have not been used for a default, or user-configurable, time interval. As a result, resources such as memory and CPU that the tab was consuming are freed.
+This repository is a further-simplified fork of [gioxx/MarvellousSuspender](https://github.com/gioxx/MarvellousSuspender), hardening the core suspension and exclusion mechanics while removing features that were broken in Manifest V3 or added unnecessary complexity.
 
-If you have suggestions or problems using the extension, please [submit a bug or a feature request](https://github.com/gioxx/MarvellousSuspender/issues/).
+---
 
-**If you have lost tabs from your browser** you can read a guide for how to recover them [here](https://github.com/deanoemcke/thegreatsuspender/issues/526
-).
+## What's Different in This Fork
 
-## Chrome Web Store
+| Feature | Upstream | This Fork |
+|---|---|---|
+| Screen capture (html2canvas) | ✔️ | ❌ Removed (broken in MV3 service workers) |
+| IndexedDB / session history | ✔️ | ❌ Removed |
+| Session management page | ✔️ | ❌ Removed |
+| Battery check | ✔️ | ❌ Removed (`navigator.getBattery()` unavailable in MV3) |
+| Excluded URLs management UI | ❌ | ✔️ New `excluded.html` page |
+| Exclusion engine | partial | ✔️ Rewritten as `exclusionUtils.js` (regex/domain/contains/exact) |
+| Form input fail-safe | fails open | ✔️ Fails safe — blocks auto-suspend if content script unreachable |
+| Form detection coverage | keyCode 48–90 only | ✔️ `input`/`change` events, all element types incl. `<select>` |
+| Unit tests | ❌ | ✔️ 54 tests (Vitest) |
+| Auto-build on save | ❌ | ✔️ `grunt-contrib-watch` |
 
-The Marvellous Suspender is [available via the official Chrome Web Store](https://go.gioxx.org/tgs).
+---
 
-For more information on the permissions required for the extension, please refer to this gitHub issue: (https://github.com/greatsuspender/thegreatsuspender/issues/213)
+## Features
 
-### Install as an extension from source
+- **Automatic tab suspension** — suspend tabs after a configurable inactivity period (20 seconds to 2 weeks, or never)
+- **Manual controls** — suspend/unsuspend individual tabs, selected tabs, or all tabs via the popup
+- **Smart protection** — never suspend pinned, audible, active, or form-input tabs
+- **Excluded URLs** — full management UI with four match types: exact URL, domain (`*.example.com`), contains (substring), and regex
+- **Keyboard shortcuts** — configurable shortcuts for all actions
+- **Right-click context menu** — all actions available via context menu
+- **Theme support** — light, dark, or system theme on suspended pages
+- **Settings sync** — sync settings across Chrome profiles
+- **18 languages** — full i18n via Crowdin
 
-1. Download the **[latest available version](https://github.com/gioxx/MarvellousSuspender/releases)** and unarchive to your preferred location (whichever suits you).
-2. Using **Google Chrome** browser, navigate to chrome://extensions/ and enable "Developer mode" in the upper right corner.
-3. Click on the <kbd>Load unpacked extension...</kbd> button.
-4. Browse to the src directory of the unarchived folder and confirm.
+---
 
-If you have completed the above steps, the "welcome" page will open indicating successful installation of the extension.
+## Installation
 
-Be sure to unsuspend all suspended tabs before removing any other version of the extension or they will disappear forever!
+### Load Unpacked (Recommended for this fork)
 
-### Build from github
+1. Clone this repository
+2. Navigate to `chrome://extensions/` in Chrome
+3. Enable **Developer mode** (top right)
+4. Click **Load unpacked**
+5. Select the `src/` directory
 
-Dependencies: openssl, npm.
+### Build from Source
 
-Clone the repository and run these commands:
-```
+**Prerequisites:** Node.js, npm, OpenSSL
+
+```bash
 npm install
-npm run generate-key
-npm run build
+npm run generate-key   # one-time: generates key.pem for CRX signing
+npm run build          # production build → build/zip/ and build/crx/
 ```
 
-It should say:
+The unsigned ZIP at `build/zip/tms-{version}.zip` can also be loaded via **Load unpacked** after extraction.
+
+---
+
+## Development
+
+```bash
+npm run dev            # build once, then watch src/ for changes (auto-rebuild)
+npm run test           # run unit tests (Vitest)
+npm run test:watch     # run tests in watch mode
+npm run lint           # ESLint
 ```
-Done, without errors.
-```
 
-The extension in crx format will be inside the build/crx/ directory. You can drag it into [extensions] (chrome://extensions) to install locally.
+VS Code tasks are available via **Terminal → Run Task**: Build, Test, Watch, Test Watch.
 
-#### Note: If after importing the crx file you encounter the error: "This extension is not listed in the Chrome Web Store and may have been added without your knowledge" and Chrome prevents you from enabling the extension:
-Extract the .zip file located in the build/zip/ directory, navigate to "chrome://extensions" in your browser, Click on the <kbd>Load unpacked extension...</kbd> button, browse to the extracted folder and confirm.
+---
 
-## Contributing to this extension
+## Excluded URLs
 
-Contributions are very welcome. Feel free to submit pull requests for new features and bug fixes. For new features, ideally you would raise an issue for the proposed change first so that we can discuss ideas. This will go a long way to ensuring your pull request is accepted.
+Open **Manage excluded pages** from the popup, or navigate to the **Excluded URLs** link in Settings.
 
-### Localization (l10n)
+| Match type | Format | Example |
+|---|---|---|
+| Exact URL | Full URL | `https://mail.google.com/` |
+| Domain | `*.example.com` | `*.google.com` |
+| Contains | Any substring | `github` |
+| Regex | `/pattern/` | `/\/app\/.*/` |
 
-Feel free to help me to localize this extension in any language, you can do it using Crowdin connecting to https://crowdin.com/project/tms. If your mothertongue language is not available please "ping me" on [Twitter](https://twitter.com/Gioxx) or [submit a feature request](https://github.com/gioxx/MarvellousSuspender/issues/).
+Rules can be added, removed, imported (newline-separated text), and exported from the management page.
+
+---
+
+## Architecture
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for module responsibilities, tab lifecycle, messaging system, settings reference, and build system details.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please raise an issue before submitting a pull request for larger changes.
+
+### Localization
+
+Translations are managed on [Crowdin](https://crowdin.com/project/tms). If your language is missing, open an issue or submit a request there.
+
+---
 
 ## License
 
-This work is licensed under a GNU GENERAL PUBLIC LICENSE (v2)
+GNU General Public License v2. See [LICENSE](LICENSE).
 
-### Shoutouts
+---
 
-This package uses the [html2canvas](https://github.com/niklasvh/html2canvas) library written by Niklas von Hertzen.
-It also uses the indexedDb wrapper [db.js](https://github.com/aaronpowell/db.js) written by Aaron Powell.
-Thank you also to [BrowserStack](https://www.browserstack.com) for providing free chrome testing tools.
+## Acknowledgements
+
+- Original extension by [Dean Oemcke](https://github.com/deanoemcke/thegreatsuspender)
+- Upstream fork maintained by [Gioxx](https://github.com/gioxx/MarvellousSuspender)
+- [BrowserStack](https://www.browserstack.com) for free Chrome testing tools
