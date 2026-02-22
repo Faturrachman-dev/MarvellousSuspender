@@ -10,9 +10,9 @@ import  { gsUtils }               from './gsUtils.js';
         chrome.runtime.reload();
       });
     document
-      .getElementById('sessionManagementLink')
+      .getElementById('recoveryPageLink')
       .addEventListener('click', function() {
-        chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
+        chrome.tabs.create({ url: chrome.runtime.getURL('recovery.html') });
       });
   }
   if (document.readyState !== 'loading') {

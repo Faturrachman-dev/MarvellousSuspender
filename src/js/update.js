@@ -1,7 +1,6 @@
 import  { gsIndexedDb }           from './gsIndexedDb.js';
 import  { gsSession }             from './gsSession.js';
 import  { gsUtils }               from './gsUtils.js';
-import  { historyUtils }          from './historyUtils.js';
 
 (() => {
   'use strict';
@@ -41,23 +40,35 @@ import  { historyUtils }          from './historyUtils.js';
   function setExportBackupClickHandler() {
     document.getElementById('exportBackupBtn').onclick = async function(e) {
       const currentSession = await gsSession.buildCurrentSession();
-      historyUtils.exportSession(currentSession, function() {
-        document.getElementById('exportBackupBtn').style.display = 'none';
-        setRestartExtensionClickHandler(false);
+      const fileName = `tms-session-backup-${Date.now()}.json`;
+      const blob = new Blob([JSON.stringify(currentSession, null, 2)], {
+        type: 'application/json;charset=utf-8',
       });
+      const downloadUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = downloadUrl;
+      anchor.download = fileName;
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      URL.revokeObjectURL(downloadUrl);
+      anchor.remove();
+
+      document.getElementById('exportBackupBtn').style.display = 'none';
+      setRestartExtensionClickHandler(false);
     };
   }
 
-  function setSessionManagerClickHandler() {
-    document.getElementById('sessionManagerLink').onclick = function(e) {
+  function setRecoveryPageClickHandler() {
+    document.getElementById('recoveryPageLink').onclick = function(e) {
       e.preventDefault();
-      chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('recovery.html') });
       setRestartExtensionClickHandler(false);
     };
   }
 
   gsUtils.documentReadyAndLocalisedAsPromised(window).then(function() {
-    setSessionManagerClickHandler();
+    setRecoveryPageClickHandler();
     setRestartExtensionClickHandler(true);
     setExportBackupClickHandler();
 

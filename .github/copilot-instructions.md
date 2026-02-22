@@ -80,3 +80,9 @@ These instructions apply to ALL interactions in this workspace.
 - Use environment variables or `.env` files (gitignored) for sensitive config
 - Sanitize user inputs, use parameterized queries (no string concatenation for SQL)
 - Use `password_hash()` / `password_verify()`, never MD5/SHA1 for passwords
+
+## Chrome Extension Best Practices
+
+- **Performance**: When dealing with bulk tab operations (e.g., `suspendAll`), tune queue concurrency and processing delays to avoid long user-facing delays while preventing browser lockups.
+- **Logging**: Service worker logs can easily become bloated. Filter diagnostics to high-signal events (e.g., specific message actions) and ignore noisy state changes (e.g., `session` storage churn).
+- **Legacy Code**: When removing legacy features, ensure all entry points (UI buttons, context menus, shortcuts) and internal references are cleaned up, and redirect old pages to appropriate fallbacks.

@@ -16,8 +16,8 @@ import { exclusionUtils } from './exclusionUtils.js';
   // DOM refs — populated after DOMContentLoaded
   // -------------------------------------------------------------------------
   let elNewEntry, elMatchType, elAddBtn, elAddFromCurrentBtn, elAddFeedback;
-  let elTestUrl, elTestBtn, elTestResult;
-  let elRuleList, elRuleCount, elEmptyState, elClearAllBtn;
+  let elTestUrl, elTestBtn, elRecheckCurrentBtn, elClearTestBtn, elTestResult;
+  let elRuleList, elRuleCount, elEmptyState, elCleanupBtn, elClearAllBtn;
   let elConfirmOverlay, elConfirmMsg, elConfirmOk, elConfirmCancel;
 
   let pendingConfirmCallback = null;
@@ -84,10 +84,12 @@ import { exclusionUtils } from './exclusionUtils.js';
 
     if (entries.length === 0) {
       elEmptyState.style.display = '';
+      elCleanupBtn.style.display = 'none';
       elClearAllBtn.style.display = 'none';
       elRuleCount.textContent = '';
     } else {
       elEmptyState.style.display = 'none';
+      elCleanupBtn.style.display = '';
       elClearAllBtn.style.display = '';
       elRuleCount.textContent = `(${entries.length})`;
 
@@ -171,6 +173,47 @@ import { exclusionUtils } from './exclusionUtils.js';
     await render();
   }
 
+  async function cleanupRules() {
+    const currentList = await getWhitelist();
+    const rawEntries = (currentList || '')
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    const cleaned = [];
+    const unique = new Set();
+    let skippedInvalidRegex = 0;
+    let skippedDuplicates = 0;
+
+    for (const entry of rawEntries) {
+      if (entry.startsWith('/') && entry.endsWith('/')) {
+        try {
+          new RegExp(entry.slice(1, -1));
+        } catch {
+          skippedInvalidRegex += 1;
+          continue;
+        }
+      }
+
+      if (unique.has(entry)) {
+        skippedDuplicates += 1;
+        continue;
+      }
+
+      unique.add(entry);
+      cleaned.push(entry);
+    }
+
+    const newList = cleaned.sort((a, b) => a.localeCompare(b)).join('\n');
+    await saveWhitelist(newList);
+    await render();
+
+    showFeedback(
+      elAddFeedback,
+      `Cleanup complete: removed ${skippedDuplicates} duplicate(s), ${skippedInvalidRegex} invalid regex rule(s).`,
+    );
+  }
+
   function confirmRemove(rawEntry) {
     elConfirmMsg.textContent = `Remove rule "${rawEntry}"?`;
     pendingConfirmCallback = () => removeRule(rawEntry);
@@ -209,6 +252,34 @@ import { exclusionUtils } from './exclusionUtils.js';
       elTestResult.textContent = '✗ NOT excluded — this tab would be eligible for suspension.';
       elTestResult.className = 'ex-test-result ex-test-result--no-match';
     }
+  }
+
+  function clearTestPanel() {
+    elTestUrl.value = '';
+    elTestResult.textContent = '';
+    elTestResult.className = 'ex-test-result';
+  }
+
+  async function recheckCurrentTab() {
+    const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (!tab || !tab.url) {
+      elTestResult.textContent = 'Could not resolve the current tab URL.';
+      elTestResult.className = 'ex-test-result';
+      return;
+    }
+
+    let url = tab.url;
+    if (gsUtils.isSuspendedUrl(url, true)) {
+      url = gsUtils.getOriginalUrl(url);
+    }
+    if (url.startsWith('chrome://') || url.startsWith('about:')) {
+      elTestResult.textContent = 'Current tab URL cannot be tested.';
+      elTestResult.className = 'ex-test-result';
+      return;
+    }
+
+    elTestUrl.value = url;
+    await runTest();
   }
 
   // -------------------------------------------------------------------------
@@ -255,31 +326,37 @@ import { exclusionUtils } from './exclusionUtils.js';
     elAddFeedback       = document.getElementById('exAddFeedback');
     elTestUrl           = document.getElementById('exTestUrl');
     elTestBtn           = document.getElementById('exTestBtn');
+    elRecheckCurrentBtn = document.getElementById('exRecheckCurrentBtn');
+    elClearTestBtn      = document.getElementById('exClearTestBtn');
     elTestResult        = document.getElementById('exTestResult');
     elRuleList          = document.getElementById('exRuleList');
     elRuleCount         = document.getElementById('exRuleCount');
     elEmptyState        = document.getElementById('exEmptyState');
+    elCleanupBtn        = document.getElementById('exCleanupBtn');
     elClearAllBtn       = document.getElementById('exClearAllBtn');
     elConfirmOverlay    = document.getElementById('exConfirmOverlay');
     elConfirmMsg        = document.getElementById('exConfirmMsg');
     elConfirmOk         = document.getElementById('exConfirmOk');
     elConfirmCancel     = document.getElementById('exConfirmCancel');
 
-    elAddBtn.addEventListener('click', addRule);
-    elAddFromCurrentBtn.addEventListener('click', fillFromCurrentTab);
-    elClearAllBtn.addEventListener('click', confirmClearAll);
-    elTestBtn.addEventListener('click', runTest);
-    elTestUrl.addEventListener('keydown', e => { if (e.key === 'Enter') runTest(); });
-    elNewEntry.addEventListener('keydown', e => { if (e.key === 'Enter') addRule(); });
+    elAddBtn?.addEventListener('click', addRule);
+    elAddFromCurrentBtn?.addEventListener('click', fillFromCurrentTab);
+    elCleanupBtn?.addEventListener('click', cleanupRules);
+    elClearAllBtn?.addEventListener('click', confirmClearAll);
+    elTestBtn?.addEventListener('click', runTest);
+    elRecheckCurrentBtn?.addEventListener('click', recheckCurrentTab);
+    elClearTestBtn?.addEventListener('click', clearTestPanel);
+    elTestUrl?.addEventListener('keydown', e => { if (e.key === 'Enter') runTest(); });
+    elNewEntry?.addEventListener('keydown', e => { if (e.key === 'Enter') addRule(); });
 
-    elConfirmOk.addEventListener('click', async () => {
+    elConfirmOk?.addEventListener('click', async () => {
       elConfirmOverlay.style.display = 'none';
       if (pendingConfirmCallback) {
         await pendingConfirmCallback();
         pendingConfirmCallback = null;
       }
     });
-    elConfirmCancel.addEventListener('click', () => {
+    elConfirmCancel?.addEventListener('click', () => {
       elConfirmOverlay.style.display = 'none';
       pendingConfirmCallback = null;
     });
@@ -295,5 +372,5 @@ import { exclusionUtils } from './exclusionUtils.js';
     document.body.style.visibility = 'visible';
   }
 
-  gsUtils.documentReadyAsPromised(document).then(init);
+  gsUtils.documentReadyAndLocalisedAsPromised(window).then(init);
 })();

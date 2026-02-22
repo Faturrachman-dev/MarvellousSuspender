@@ -10,8 +10,9 @@ import  { tgs }                   from './tgs.js';
 export const gsTabSuspendManager = (function() {
   'use strict';
 
-  const DEFAULT_CONCURRENT_SUSPENSIONS = 3;
+  const DEFAULT_CONCURRENT_SUSPENSIONS = 8;
   const DEFAULT_SUSPENSION_TIMEOUT = 60 * 1000;
+  const DEFAULT_QUEUE_PROCESSING_DELAY = 50;
 
   const QUEUE_ID = 'suspensionQueue';
 
@@ -23,6 +24,7 @@ export const gsTabSuspendManager = (function() {
       const queueProps = {
         concurrentExecutors: DEFAULT_CONCURRENT_SUSPENSIONS,
         jobTimeout: DEFAULT_SUSPENSION_TIMEOUT,
+        processingDelay: DEFAULT_QUEUE_PROCESSING_DELAY,
         executorFn: performSuspension,
         exceptionFn: handleSuspensionException,
       };

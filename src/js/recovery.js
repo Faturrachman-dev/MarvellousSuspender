@@ -4,34 +4,56 @@ import  { gsMessages }            from './gsMessages.js';
 import  { gsSession }             from './gsSession.js';
 import  { gsStorage }             from './gsStorage.js';
 import  { gsUtils }               from './gsUtils.js';
-import  { historyItems }          from './historyItems.js';
 
 (() => {
 
   var restoreAttempted = false;
-  var tabsToRecover = [];
+
+  function createRecoveryTabHtml(tabProperties) {
+    const tabLink = document.createElement('a');
+    tabLink.className = 'historyContainer';
+    tabLink.href = '#';
+    tabLink.setAttribute('data-url', tabProperties.url || '');
+    tabLink.setAttribute('data-tabId', tabProperties.id ? String(tabProperties.id) : '');
+
+    const favicon = document.createElement('img');
+    favicon.className = 'favicon';
+    favicon.src = tabProperties.favIconUrl || 'img/chromeDefaultFavicon.ico';
+
+    const title = document.createElement('span');
+    title.className = 'historyTitle';
+    title.textContent = tabProperties.title || tabProperties.url || 'Untitled tab';
+
+    tabLink.appendChild(favicon);
+    tabLink.appendChild(title);
+    return tabLink;
+  }
 
   async function getRecoverableTabs(currentTabs) {
+    const tabsToRecover = [];
     const lastSession = await gsIndexedDb.fetchLastSession();
     //check to see if they still exist in current session
-    if (lastSession) {
-      gsUtils.removeInternalUrlsFromSession(lastSession);
-      for (const window of lastSession.windows) {
-        for (const tabProperties of window.tabs) {
-          if (gsUtils.isSuspendedTab(tabProperties)) {
-            var originalUrl = gsUtils.getOriginalUrl(tabProperties.url);
-            // Ignore suspended tabs from previous session that exist unsuspended now
-            const originalTab = currentTabs.find(o => o.url === originalUrl);
-            if (!originalTab) {
-              tabProperties.windowId = window.id;
-              tabProperties.sessionId = lastSession.sessionId;
-              tabsToRecover.push(tabProperties);
-            }
+    if (!lastSession || !lastSession.windows) {
+      return tabsToRecover;
+    }
+
+    gsUtils.removeInternalUrlsFromSession(lastSession);
+    for (const window of lastSession.windows) {
+      for (const tabProperties of window.tabs) {
+        if (gsUtils.isSuspendedTab(tabProperties)) {
+          var originalUrl = gsUtils.getOriginalUrl(tabProperties.url);
+          // Ignore suspended tabs from previous session that exist unsuspended now
+          const originalTab = currentTabs.find(o => o.url === originalUrl);
+          if (!originalTab) {
+            tabProperties.windowId = window.id;
+            tabProperties.sessionId = lastSession.sessionId;
+            tabsToRecover.push(tabProperties);
           }
         }
       }
-      return tabsToRecover;
     }
+
+    return tabsToRecover;
   }
 
   function removeTabFromList(tabToRemove) {
@@ -96,16 +118,9 @@ import  { historyItems }          from './historyItems.js';
 
   gsUtils.documentReadyAndLocalisedAsPromised(window).then(async function() {
     var restoreEl = document.getElementById('restoreSession'),
-      manageEl = document.getElementById('manageManuallyLink'),
       previewsEl = document.getElementById('previewsOffBtn'),
       recoveryEl = document.getElementById('recoveryTabs'),
-      warningEl = document.getElementById('screenCaptureNotice'),
-      tabEl;
-
-    manageEl.onclick = function(e) {
-      e.preventDefault();
-      chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
-    };
+      warningEl = document.getElementById('screenCaptureNotice');
 
     if (previewsEl) {
       previewsEl.onclick = async (e) => {
@@ -139,16 +154,14 @@ import  { historyItems }          from './historyItems.js';
       return;
     }
 
-    for (var tabToRecover of tabsToRecover) {
+    for (const tabToRecover of tabsToRecover) {
       tabToRecover.title = gsUtils.getCleanTabTitle(tabToRecover);
       tabToRecover.url = gsUtils.getOriginalUrl(tabToRecover.url);
-      tabEl = await historyItems.createTabHtml(tabToRecover, false);
-      tabEl.onclick = function() {
-        return function(e) {
-          e.preventDefault();
-          chrome.tabs.create({ url: tabToRecover.url, active: false });
-          removeTabFromList(tabToRecover);
-        };
+      const tabEl = createRecoveryTabHtml(tabToRecover);
+      tabEl.onclick = function(e) {
+        e.preventDefault();
+        chrome.tabs.create({ url: tabToRecover.url, active: false });
+        removeTabFromList(tabToRecover);
       };
       recoveryEl.appendChild(tabEl);
     }

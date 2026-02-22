@@ -99,11 +99,18 @@
 .ex-test-row {
   display: flex;
   gap: 1rem;
+  align-items: center;
   max-width: 680px;
 }
 
 .ex-test-input {
   flex: 1;
+}
+
+.ex-test-actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
 }
 
 .ex-test-result {
@@ -202,6 +209,8 @@
 /* ---- Bulk actions ---- */
 .ex-bulk-actions {
   margin-top: 1.6rem;
+  display: flex;
+  gap: 0.8rem;
 }
 
 /* ---- Confirm overlay ---- */

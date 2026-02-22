@@ -12,9 +12,42 @@ import  { tgs }                   from './tgs.js';
 
 (() => {
 
+  const SW_VERBOSE_DIAGNOSTICS = true;
+  const SW_TRACE_MESSAGE_ACTIONS = new Set([
+    'suspendOne',
+    'unsuspendOne',
+    'suspendAll',
+    'unsuspendAll',
+    'suspendSelected',
+    'unsuspendSelected',
+    'whitelistDomain',
+    'whitelistPage',
+    'excludedLink',
+    'settingsLink',
+  ]);
+
+  function swTrace(eventName, details) {
+    if (!SW_VERBOSE_DIAGNOSTICS) return;
+    if (typeof details === 'undefined') {
+      // eslint-disable-next-line no-console
+      console.log('[TMS Lite][SW]', eventName);
+      return;
+    }
+    // eslint-disable-next-line no-console
+    console.log('[TMS Lite][SW]', eventName, details);
+  }
+
+  if (SW_VERBOSE_DIAGNOSTICS) {
+    swTrace('diagnostics-enabled', {
+      version: chrome.runtime.getManifest().version,
+      extensionId: chrome.runtime.id,
+    });
+  }
+
   let startupDone = false;  // This global is safe because we only use it at startup.  It does not need to survive service worker suspend.
 
   function startupOnce() {
+    swTrace('startup-once');
     gsUtils.log('startupOnce');
     if (startupDone) return;
     startupDone = true;
@@ -38,6 +71,7 @@ import  { tgs }                   from './tgs.js';
   }
 
   chrome.runtime.onInstalled.addListener(async (details) => {
+    swTrace('runtime.onInstalled', details);
     gsUtils.log('2 runtime.onInstalled', details);
     // Fired when the extension is first installed, when the extension is updated to a new version, and when Chrome is updated to a new version.
     // Fired when an unpacked extension is reloaded
@@ -81,6 +115,7 @@ import  { tgs }                   from './tgs.js';
   }
 
   chrome.runtime.onStartup.addListener(function () {
+    swTrace('runtime.onStartup');
     gsUtils.log('4 runtime.onStartup');
     // Fired when a profile that has this extension installed first starts up.
     // This event is not fired when an incognito profile is started, even if this extension is operating in 'split' incognito mode.
@@ -90,9 +125,11 @@ import  { tgs }                   from './tgs.js';
   });
 
   chrome.runtime.onSuspend.addListener(function () {
+    swTrace('runtime.onSuspend');
     gsUtils.log('5 runtime.onSuspend');
   });
   chrome.runtime.onSuspendCanceled.addListener(function () {
+    swTrace('runtime.onSuspendCanceled');
     gsUtils.log('6 runtime.onSuspendCanceled');
   });
 
@@ -122,6 +159,13 @@ import  { tgs }                   from './tgs.js';
 
 
   async function messageRequestListener(request, sender, sendResponse) {
+    const action = request && request.action;
+    if (SW_TRACE_MESSAGE_ACTIONS.has(action)) {
+      swTrace('runtime.onMessage', {
+        action,
+        tabId: sender && sender.tab ? sender.tab.id : null,
+      });
+    }
     gsUtils.log('background', 'messageRequestListener', request.action, request, sender);
 
     switch (request.action) {
@@ -194,6 +238,10 @@ import  { tgs }                   from './tgs.js';
   }
 
   async function externalMessageRequestListener(request, sender, sendResponse) {
+    swTrace('runtime.onMessageExternal', {
+      action: request && request.action,
+      tabId: sender && sender.tab ? sender.tab.id : null,
+    });
     gsUtils.log('background', 'externalMessageRequestListener', request, sender);
 
     if (!request.action || !['suspend', 'unsuspend'].includes(request.action)) {
@@ -251,6 +299,10 @@ import  { tgs }                   from './tgs.js';
 
   // Listeners must part of the top-level evaluation of the service worker
   async function contextMenuListener(info, tab) {
+    swTrace('contextMenus.onClicked', {
+      menuItemId: info && info.menuItemId,
+      tabId: tab && tab.id,
+    });
     gsUtils.log('background', 'contextMenuListener', info.menuItemId);
     switch (info.menuItemId) {
       case 'open_link_in_suspended_tab':
@@ -292,9 +344,6 @@ import  { tgs }                   from './tgs.js';
       case 'unsuspend_all_tabs':
         tgs.unsuspendAllTabsInAllWindows();
         break;
-      case 'open_session_history':
-        await chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
-        break;
       default:
         break;
     }
@@ -302,6 +351,7 @@ import  { tgs }                   from './tgs.js';
 
   // Listeners must part of the top-level evaluation of the service worker
   async function commandListener(command) {
+    swTrace('commands.onCommand', command);
     gsUtils.log('background', 'commandListener', command);
     switch (command) {
       case '1-suspend-tab':
@@ -334,14 +384,12 @@ import  { tgs }                   from './tgs.js';
       case '6-unsuspend-all-windows':
         tgs.unsuspendAllTabsInAllWindows();
         break;
-      case '7-open_session_history':
-        await chrome.tabs.create({ url: chrome.runtime.getURL('history.html') });
-        break;
     }
   }
 
   /** @param { chrome.alarms.Alarm } alarm */
   async function alarmListener(alarm) {
+    swTrace('alarms.onAlarm', alarm);
     gsUtils.log('background', 'alarmListener', alarm);
     const tabId = parseInt(alarm.name);
     const tab = await gsChrome.tabsGet(tabId);
@@ -509,6 +557,16 @@ import  { tgs }                   from './tgs.js';
 
 
   // Listeners get added every time the service worker restarts
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'session') {
+      return;
+    }
+    swTrace('storage.onChanged', {
+      areaName,
+      keys: Object.keys(changes || {}),
+    });
+  });
+
   chrome.runtime.onMessage.addListener(messageRequestListener);
   chrome.runtime.onMessageExternal.addListener(externalMessageRequestListener);
   chrome.commands.onCommand.addListener(commandListener);
