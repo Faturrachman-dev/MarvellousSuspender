@@ -7,7 +7,7 @@ module.exports = function(grunt) {
     manifest: grunt.file.readJSON('src/manifest.json'),
     config: {
       tempDir:
-        grunt.cli.tasks[0] === 'tgut' ? 'build/tgut-temp/' : 'build/tms-temp/',
+        grunt.cli.tasks[0] === 'tgut' ? 'dist/tgut/' : 'dist/tms/',
       buildName:
         grunt.cli.tasks[0] === 'tgut' ? 'tgut-<%= manifest.version %>' : 'tms-<%= manifest.version %>',
     },
@@ -108,19 +108,15 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-clean');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.registerTask('default', [
+    'clean',
     'copy',
     'string-replace:debugoff',
-    'crx:public',
-    'crx:private',
-    'clean',
   ]);
   grunt.registerTask('tgut', [
+    'clean',
     'copy',
     'string-replace:debugon',
     'string-replace:localesTgut',
-    'crx:public',
-    'crx:private',
-    'clean',
   ]);
   // Dev watch mode: copy to temp dir with debug on, then watch for changes
   grunt.registerTask('dev', [

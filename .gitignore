@@ -4,6 +4,7 @@
 *.pem
 *.zip
 build
+dist
 node_modules
 Thumbs.db
 tmp

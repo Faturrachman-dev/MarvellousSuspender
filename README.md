@@ -51,22 +51,23 @@ This repository is a further-simplified fork of [gioxx/MarvellousSuspender](http
 
 ### Build from Source
 
-**Prerequisites:** Node.js, npm, OpenSSL
+**Prerequisites:** Node.js, npm
 
 ```bash
 npm install
-npm run generate-key   # one-time: generates key.pem for CRX signing
-npm run build          # production build → build/zip/ and build/crx/
+npm run build          # production build → dist/tms/src/
 ```
 
-The unsigned ZIP at `build/zip/tms-{version}.zip` can also be loaded via **Load unpacked** after extraction.
+The production build at `dist/tms/src/` can be loaded via **Load unpacked** in Chrome.
 
 ---
 
 ## Development
 
+The `src/` directory is the development version (source of truth). You can load it directly into Chrome via **Load unpacked** for development.
+
 ```bash
-npm run dev            # build once, then watch src/ for changes (auto-rebuild)
+npm run dev            # build once, then watch src/ for changes (auto-syncs to dist/tms/src/)
 npm run test           # run unit tests (Vitest)
 npm run test:watch     # run tests in watch mode
 npm run lint           # ESLint

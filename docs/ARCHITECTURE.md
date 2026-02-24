@@ -374,16 +374,14 @@ Tab gains focus → tgs.resetAutoSuspendTimerForTab(tab)
 
 ### Prerequisites
 - Node.js + npm
-- OpenSSL (for CRX signing key generation)
 
 ### Scripts
 
 | Command | Description |
 |---|---|
 | `npm install` | Install dependencies |
-| `npm run generate-key` | Generate `key.pem` signing key (one-time) |
-| `npm run build` | Production build (Grunt: copy, disable debug, ZIP + CRX) |
-| `npm run dev` | Build + watch `src/**` for changes (auto-rebuild) |
+| `npm run build` | Production build (Grunt: copy, disable debug) |
+| `npm run dev` | Build + watch `src/**` for changes (auto-syncs to `dist/`) |
 | `npm run test` | Run unit tests once (Vitest) |
 | `npm run test:watch` | Run tests in interactive watch mode |
 | `npm run test:coverage` | Run tests with V8 coverage report |
@@ -391,19 +389,17 @@ Tab gains focus → tgs.resetAutoSuspendTimerForTab(tab)
 
 ### Build Process (Grunt)
 
-1. **Copy** — `src/` → `build/tms-temp/` (excluding test files and XCF source images)
-2. **String replace** — Disable debug flags (`debugInfo = false`, `debugError = false`)
-3. **Package ZIP** — Unsigned archive → `build/zip/tms-{version}.zip`
-4. **Package CRX** — Signed extension → `build/crx/tms-{version}.crx` (requires `key.pem`)
-5. **Clean** — Remove temp build directory
+1. **Clean** — Remove previous `dist/` directory
+2. **Copy** — `src/` → `dist/tms/src/` (excluding test files and XCF source images)
+3. **String replace** — Disable debug flags (`debugInfo = false`, `debugError = false`)
 
-**Dev task** (`npm run dev` / `grunt dev`): runs steps 1–2, then enters watch mode — any change under `src/` triggers an incremental copy + string-replace.
+**Dev task** (`npm run dev` / `grunt dev`): runs steps 1–3, then enters watch mode — any change under `src/` triggers an incremental copy + string-replace to `dist/tms/src/`.
 
 ### Loading for Development
 
 ```
 1. chrome://extensions → enable Developer mode
-2. Load unpacked → select src/
+2. Load unpacked → select src/ (for development) or dist/tms/src/ (for production testing)
 3. Reload extension after JS changes (HTML/CSS changes are reflected immediately)
 ```
 
