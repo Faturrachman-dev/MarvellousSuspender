@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link type="text/css" href="css/style.css" rel="stylesheet">
+  <link type="text/css" href="css/health.css" rel="stylesheet">
+  <script type="module" src="js/health.js"></script>
+  <title data-i18n="__MSG_ext_extension_name__">The Marvellous Suspender Lite</title>
+</head>
+<body>
+
+<div class="mainContent">
+
+  <div class="pageHeader">
+    <h1 data-i18n="__MSG_ext_extension_name__"></h1>
+  </div>
+
+  <div class="contentNav">
+    <ul>
+      <li>
+        <a href="options.html" data-i18n="__MSG_html_sidebar_general_settings__"></a>
+      </li>
+      <li>
+        <a href="excluded.html" data-i18n="__MSG_html_sidebar_excluded_urls__"></a>
+      </li>
+      <li>
+        <a class="active" href="health.html">Health Check</a>
+      </li>
+      <li class="noIncognito">
+        <a href="shortcuts.html" data-i18n="__MSG_html_sidebar_shortcuts__"></a>
+      </li>
+      <li>
+        <a href="about.html" data-i18n="__MSG_html_sidebar_support__"></a>
+      </li>
+    </ul>
+  </div>
+
+  <div class="content">
+    <div class="sub-section">
+      <h2>Suspended Tab Health Check</h2>
+      <p class="health-description">
+        Scan suspended tabs, verify heartbeat responses, and recover only tabs that look genuinely broken.
+      </p>
+
+      <div class="health-actions">
+        <button id="healthScanBtn" class="btn btn-primary">Run health check</button>
+        <button id="healthRecoverAllBtn" class="btn btn-secondary" disabled>Recover all broken tabs</button>
+      </div>
+
+      <div id="healthSummary" class="health-summary" aria-live="polite"></div>
+      <div id="healthFeedback" class="health-feedback" aria-live="polite"></div>
+    </div>
+
+    <div class="sub-section">
+      <h2>Suspended tab status</h2>
+      <div id="healthEmpty" class="health-empty" style="display:none;">No suspended tabs detected.</div>
+      <div id="healthTableWrap" class="health-table-wrap" style="display:none;">
+        <table class="health-table" aria-label="Suspended tab health list">
+          <thead>
+            <tr>
+              <th>Tab</th>
+              <th>Status</th>
+              <th>Original URL</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="healthTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

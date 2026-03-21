@@ -45,6 +45,115 @@ import  { tgs }                   from './tgs.js';
   }
 
   let startupDone = false;  // This global is safe because we only use it at startup.  It does not need to survive service worker suspend.
+  const BOOT_HEALTH_CHECK_KEY = 'gsBootHealthCheckDone';
+  const BOOT_HEALTH_PING_TIMEOUT_MS = 1200;
+  const BOOT_HEALTH_RETRY_DELAY_MS = 500;
+
+  function isLikelyBrokenSuspendedTab(tab) {
+    if (!tab || !gsUtils.isSuspendedTab(tab, true)) {
+      return false;
+    }
+    const title = typeof tab.title === 'string' ? tab.title.trim() : '';
+    return tab.status === 'loading' || title === '' || title === '...';
+  }
+
+  function sendPingToSuspendedTabAsPromise(tabId) {
+    return new Promise(resolve => {
+      let isResolved = false;
+      const complete = value => {
+        if (isResolved) {
+          return;
+        }
+        isResolved = true;
+        resolve(value);
+      };
+
+      const timeoutId = setTimeout(() => {
+        complete(false);
+      }, BOOT_HEALTH_PING_TIMEOUT_MS);
+
+      const responseHandler = response => {
+        clearTimeout(timeoutId);
+        if (chrome.runtime.lastError) {
+          complete(false);
+          return;
+        }
+        complete(Boolean(response && response.alive));
+      };
+
+      try {
+        chrome.tabs.sendMessage(tabId, { action: 'ping' }, { frameId: 0 }, responseHandler);
+      }
+      catch {
+        clearTimeout(timeoutId);
+        complete(false);
+      }
+    });
+  }
+
+  async function recoverUnresponsiveSuspendedTab(tab) {
+    const refreshedTab = await gsChrome.tabsGet(tab.id);
+    if (!refreshedTab || !gsUtils.isSuspendedTab(refreshedTab, true)) {
+      return false;
+    }
+
+    const originalUrl = gsUtils.getOriginalUrl(refreshedTab.url);
+    if (!originalUrl) {
+      swTrace('orphan-recovery.missing-original-url', { tabId: refreshedTab.id });
+      return false;
+    }
+
+    swTrace('orphan-recovery.unsuspending-tab', { tabId: refreshedTab.id });
+    await gsChrome.tabsUpdate(refreshedTab.id, { url: originalUrl });
+    return true;
+  }
+
+  async function performTargetedOrphanSweep() {
+    const extensionUrlPattern = `chrome-extension://${chrome.runtime.id}/*`;
+    const extensionTabs = await gsChrome.tabsQuery({ url: extensionUrlPattern });
+    const suspendedTabs = extensionTabs.filter(tab => gsUtils.isSuspendedTab(tab, true));
+
+    if (suspendedTabs.length === 0) {
+      return;
+    }
+
+    let recoveredCount = 0;
+    for (const tab of suspendedTabs) {
+      const isAlive = await sendPingToSuspendedTabAsPromise(tab.id);
+      if (isAlive || !isLikelyBrokenSuspendedTab(tab)) {
+        continue;
+      }
+
+      await gsUtils.setTimeout(BOOT_HEALTH_RETRY_DELAY_MS);
+      const refetchedTab = await gsChrome.tabsGet(tab.id);
+      if (!refetchedTab || !gsUtils.isSuspendedTab(refetchedTab, true)) {
+        continue;
+      }
+
+      const stillAlive = await sendPingToSuspendedTabAsPromise(refetchedTab.id);
+      if (stillAlive || !isLikelyBrokenSuspendedTab(refetchedTab)) {
+        continue;
+      }
+
+      if (await recoverUnresponsiveSuspendedTab(refetchedTab)) {
+        recoveredCount += 1;
+      }
+    }
+
+    if (recoveredCount > 0) {
+      swTrace('orphan-recovery.completed', { recoveredCount });
+    }
+  }
+
+  async function runBootHealthCheckOncePerBrowserSession() {
+    const hasRunBootHealthCheck = await gsStorage.getStorageJSON('session', BOOT_HEALTH_CHECK_KEY);
+    if (hasRunBootHealthCheck) {
+      return;
+    }
+
+    await gsStorage.saveStorage('session', BOOT_HEALTH_CHECK_KEY, true);
+    await performTargetedOrphanSweep();
+  }
 
   function startupOnce() {
     swTrace('startup-once');
@@ -55,6 +164,7 @@ import  { tgs }                   from './tgs.js';
     tgs.resetAutoSuspendTimerForAllTabs();
 
     Promise.resolve()
+      .then(runBootHealthCheckOncePerBrowserSession)
       .then(gsStorage.initSettingsAsPromised)   // ensure settings have been loaded and synced
       .then(async () => { await gsStorage.saveStorage('session', 'gsInitialisationMode', true); })
       .then(gsSession.runStartupChecks)         // performs crash check (and maybe recovery) and tab responsiveness checks

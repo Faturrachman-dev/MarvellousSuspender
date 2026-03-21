@@ -1,0 +1,103 @@
+.health-description {
+  margin: 0 0 0.9rem;
+  color: #444;
+  line-height: 1.45;
+}
+
+.health-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 0.9rem;
+}
+
+.health-summary {
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.health-feedback {
+  min-height: 1.2rem;
+  color: #3f6f15;
+}
+
+.health-feedback.error {
+  color: #9f3a38;
+}
+
+.health-empty {
+  color: #666;
+}
+
+.health-table-wrap {
+  overflow-x: auto;
+}
+
+.health-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.health-table th,
+.health-table td {
+  padding: 0.65rem 0.55rem;
+  border-bottom: 1px solid #e9e9e9;
+  text-align: left;
+  vertical-align: top;
+}
+
+.health-table th {
+  color: #333;
+  font-size: 0.92rem;
+}
+
+.health-status {
+  display: inline-block;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.health-status.healthy {
+  background: #e6f4ea;
+  color: #1f6f43;
+}
+
+.health-status.broken {
+  background: #fdecea;
+  color: #9f3a38;
+}
+
+.health-status.unreachable {
+  background: #fff3cd;
+  color: #8a6d3b;
+}
+
+.health-tab-title {
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.health-meta {
+  color: #666;
+  font-size: 0.82rem;
+}
+
+.health-url {
+  max-width: 36rem;
+  overflow-wrap: anywhere;
+}
+
+.health-recover-btn[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 48rem) {
+  .health-table th,
+  .health-table td {
+    padding: 0.55rem 0.45rem;
+    font-size: 0.9rem;
+  }
+}

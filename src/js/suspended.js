@@ -368,6 +368,10 @@ import  { tgs }                   from './tgs.js';
         sendResponse({ sessionId: document.sessionId, isVisible });
         break;
       }
+      case 'ping' : {
+        sendResponse({ alive: true, sessionId: document.sessionId || null });
+        break;
+      }
       case 'updateCommand' : {
         // { action: 'updateCommand', tabId: context.tabId }
         setCommand(await tgs.getSuspensionToggleHotkey());

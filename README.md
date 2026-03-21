@@ -31,6 +31,7 @@ This repository is a further-simplified fork of [gioxx/MarvellousSuspender](http
 - **Manual controls** — suspend/unsuspend individual tabs, selected tabs, or all tabs via the popup
 - **Smart protection** — never suspend pinned, audible, active, or form-input tabs
 - **Excluded URLs** — full management UI with four match types: exact URL, domain (`*.example.com`), contains (substring), and regex
+- **Health Check** — settings-integrated tab health page to verify suspended-tab heartbeat and recover broken tabs
 - **Keyboard shortcuts** — configurable shortcuts for all actions
 - **Right-click context menu** — all actions available via context menu
 - **Theme support** — light, dark, or system theme on suspended pages
@@ -55,10 +56,10 @@ This repository is a further-simplified fork of [gioxx/MarvellousSuspender](http
 
 ```bash
 npm install
-npm run build          # production build → dist/tms/src/
+npm run build          # production build → dist/extension/
 ```
 
-The production build at `dist/tms/src/` can be loaded via **Load unpacked** in Chrome.
+The production build at `dist/extension/` can be loaded via **Load unpacked** in Chrome.
 
 ---
 
@@ -67,7 +68,7 @@ The production build at `dist/tms/src/` can be loaded via **Load unpacked** in C
 The `src/` directory is the development version (source of truth). You can load it directly into Chrome via **Load unpacked** for development.
 
 ```bash
-npm run dev            # build once, then watch src/ for changes (auto-syncs to dist/tms/src/)
+npm run dev            # build once, then watch src/ for changes (auto-syncs to dist/extension/)
 npm run test           # run unit tests (Vitest)
 npm run test:watch     # run tests in watch mode
 npm run lint           # ESLint

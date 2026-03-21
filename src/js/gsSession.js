@@ -12,6 +12,7 @@ export const gsSession = (function() {
 
   const tabsToRestorePerSecond  = 15;
   const tabsToGroupPerSecond    = 50;
+  const STARTUP_SUSPENDED_TAB_PING_TIMEOUT_MS = 1200;
 
   const updateUrl   = chrome.runtime.getURL('update.html');
   const updatedUrl  = chrome.runtime.getURL('updated.html');
@@ -335,6 +336,49 @@ export const gsSession = (function() {
     });
   }
 
+  async function isSuspendedTabResponsive(tab) {
+    return await new Promise(resolve => {
+      let isResolved = false;
+      const complete = value => {
+        if (isResolved) {
+          return;
+        }
+        isResolved = true;
+        resolve(value);
+      };
+
+      const timeoutId = setTimeout(() => {
+        complete(false);
+      }, STARTUP_SUSPENDED_TAB_PING_TIMEOUT_MS);
+
+      const responseHandler = response => {
+        clearTimeout(timeoutId);
+        if (chrome.runtime.lastError) {
+          complete(false);
+          return;
+        }
+        complete(typeof response !== 'undefined');
+      };
+
+      try {
+        chrome.tabs.sendMessage(tab.id, { action: 'getSuspendInfo', tab }, { frameId: 0 }, responseHandler);
+      }
+      catch {
+        clearTimeout(timeoutId);
+        complete(false);
+      }
+    });
+  }
+
+  async function hasResponsiveSuspendedTab(suspendedTabs) {
+    for (const suspendedTab of suspendedTabs) {
+      if (await isSuspendedTabResponsive(suspendedTab)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async function checkForCrashRecovery(currentSessionTabs) {
     gsUtils.log( 'gsSession', 'Checking for crash recovery: ' + new Date().toISOString() );
 
@@ -349,13 +393,21 @@ export const gsSession = (function() {
     );
 
     if (currentSessionSuspendedTabs.length > 0) {
-      gsUtils.log(
+      const hasResponsiveSuspendedTabs = await hasResponsiveSuspendedTab(currentSessionSuspendedTabs);
+      if (hasResponsiveSuspendedTabs) {
+        gsUtils.log(
+          'gsSession',
+          'Aborting tab recovery. Browser has open responsive suspended tabs.' +
+          ' Assuming user has "On start-up -> Continue where you left off" set' +
+          ' or is restarting with suspended pinned tabs.',
+        );
+        return false;
+      }
+
+      gsUtils.warning(
         'gsSession',
-        'Aborting tab recovery. Browser has open suspended tabs.' +
-        ' Assuming user has "On start-up -> Continue where you left off" set' +
-        ' or is restarting with suspended pinned tabs.',
+        'Found suspended tabs, but none responded during startup integrity checks. Continuing crash recovery checks.',
       );
-      return false;
     }
 
     const lastSession = await gsIndexedDb.fetchLastSession();

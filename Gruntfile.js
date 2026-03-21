@@ -7,22 +7,23 @@ module.exports = function(grunt) {
     manifest: grunt.file.readJSON('src/manifest.json'),
     config: {
       tempDir:
-        grunt.cli.tasks[0] === 'tgut' ? 'dist/tgut/' : 'dist/tms/',
+        grunt.cli.tasks[0] === 'tgut' ? 'dist/tgut/' : 'dist/extension/',
       buildName:
         grunt.cli.tasks[0] === 'tgut' ? 'tgut-<%= manifest.version %>' : 'tms-<%= manifest.version %>',
     },
     copy: {
       main: {
         expand: true,
-        src: ['src/**', '!src/tests.html', '!src/js/tests/**', '!src/img/*.xcf'],
+        cwd: 'src',
+        src: ['**', '!tests.html', '!js/tests/**', '!img/*.xcf'],
         dest: '<%= config.tempDir %>',
       },
     },
     'string-replace': {
       debugoff: {
         files: {
-          '<%= config.tempDir %>src/js/':
-            '<%= config.tempDir %>src/js/gsUtils.js',
+          '<%= config.tempDir %>js/':
+            '<%= config.tempDir %>js/gsUtils.js',
         },
         options: {
           replacements: [
@@ -39,8 +40,8 @@ module.exports = function(grunt) {
       },
       debugon: {
         files: {
-          '<%= config.tempDir %>src/js/':
-            '<%= config.tempDir %>src/js/gsUtils.js',
+          '<%= config.tempDir %>js/':
+            '<%= config.tempDir %>js/gsUtils.js',
         },
         options: {
           replacements: [
@@ -57,8 +58,8 @@ module.exports = function(grunt) {
       },
       localesTgut: {
         files: {
-          '<%= config.tempDir %>src/_locales/':
-            '<%= config.tempDir %>src/_locales/**',
+          '<%= config.tempDir %>_locales/':
+            '<%= config.tempDir %>_locales/**',
         },
         options: {
           replacements: [
@@ -73,7 +74,7 @@ module.exports = function(grunt) {
     crx: {
       public: {
         src: [
-          '<%= config.tempDir %>src/**/*',
+          '<%= config.tempDir %>**/*',
           '!**/html2canvas.js',
           '!**/Thumbs.db',
         ],
@@ -81,7 +82,7 @@ module.exports = function(grunt) {
       },
       private: {
         src: [
-          '<%= config.tempDir %>src/**/*',
+          '<%= config.tempDir %>**/*',
           '!**/html2canvas.js',
           '!**/Thumbs.db',
         ],
@@ -91,7 +92,7 @@ module.exports = function(grunt) {
         },
       },
     },
-    clean: ['<%= config.tempDir %>'],
+    clean: ['dist/extension/', 'dist/tgut/', 'dist/tms/'],
     watch: {
       // Re-copy and re-apply debug strings on any src change
       src: {

@@ -1,6 +1,6 @@
 ﻿# The Marvellous Suspender Lite — Architecture & Documentation
 
-> Current version: **8.1.4** · Manifest V3 · Minimum Chrome 110  
+> Current version: **0.1.0** · Manifest V3 · Minimum Chrome 110  
 > License: GNU GPLv2  
 > Fork of: [gioxx/MarvellousSuspender](https://github.com/gioxx/MarvellousSuspender) → [greatsuspender/thegreatsuspender](https://github.com/greatsuspender/thegreatsuspender)
 
@@ -10,7 +10,7 @@
 
 - [Overview](#overview)
 - [Features](#features)
-- [What Was Removed in This Fork](#what-was-removed-in-this-fork)
+- [Reliability & Recovery Notes](#reliability--recovery-notes)
 - [Project Structure](#project-structure)
 - [Architecture](#architecture)
   - [High-Level Diagram](#high-level-diagram)
@@ -72,20 +72,18 @@
 
 ---
 
-## What Was Removed in This Fork
+## Reliability & Recovery Notes
 
-The following features present in the upstream were removed because they were either broken in Manifest V3 or added complexity without benefit:
+This fork keeps startup/session integrity logic and actively validates suspended-tab health on startup.
 
-| Feature | Reason Removed |
+| Area | Current Behavior |
 |---|---|
-| **Screen capture** (html2canvas) | `chrome.scripting.executeScript` in MV3 cannot inject third-party libraries with sufficient timing to produce reliable screenshots; the feature was effectively broken |
-| **IndexedDB** (db.js / gsIndexedDb) | Only used to persist screen captures and session state; made redundant by removal of both |
-| **Session management** (gsSession / history.html) | Depended entirely on IndexedDB; crash recovery was unreliable in MV3 service workers |
-| **Battery check** | `navigator.getBattery()` is not available in MV3 service workers; the option was silently ignored |
-| **Discard-in-place-of-suspend** | Niche feature; increased suspension manager complexity |
-| **Claim-by-default** (tab migration) | Deprecated; The Great Suspender is no longer maintained |
-| **gsTabCheckManager** | Health-poll loop for suspended tabs; removed with IndexedDB |
-| **gsTabDiscardManager** | Discard queue; removed with discard feature |
+| Startup checks | `gsSession.runStartupChecks()` runs on extension startup path and performs crash-recovery checks plus tab re-initialization checks |
+| Suspended tab integrity | `gsTabCheckManager` verifies suspended tabs are responsive and can resuspend/requeue when a tab context is missing |
+| Targeted orphan recovery | `background.js` runs a one-time-per-browser-session targeted sweep that pings suspended tabs and recovers only unresponsive, suspicious tabs |
+| Heartbeat endpoint | `suspended.js` responds to ping messages for health checks |
+| Recovery guardrail | `gsSession.checkForCrashRecovery()` now distinguishes responsive suspended tabs from unresponsive ones before aborting recovery |
+| Discard support | `gsTabDiscardManager` remains available and uses queued, guarded `chrome.tabs.discard` flow |
 
 ---
 
@@ -96,11 +94,13 @@ MarvellousSuspender/
 ├── src/                          # Extension source (load directly or build)
 │   ├── manifest.json             # MV3 manifest
 │   ├── excluded.html             # Excluded URLs management page (NEW)
+│   ├── health.html               # Suspended tab health and recovery page (NEW)
 │   ├── *.html                    # Other extension pages
 │   ├── _locales/                 # i18n (18 languages)
 │   │   └── {lang}/messages.json
 │   ├── css/
 │   │   ├── excluded.css          # Styles for excluded.html (NEW)
+│   │   ├── health.css            # Styles for health.html (NEW)
 │   │   └── *.css                 # Other stylesheets
 │   ├── font/                     # Icon fonts (fontello)
 │   ├── img/                      # Extension icons & assets
@@ -110,6 +110,7 @@ MarvellousSuspender/
 │       ├── contentscript.js      # Injected into web pages
 │       ├── exclusionUtils.js     # Pure exclusion/whitelist engine (NEW)
 │       ├── excluded.js           # Controller for excluded.html (NEW)
+│       ├── health.js             # Controller for health.html (NEW)
 │       ├── gsChrome.js           # chrome.* API wrappers
 │       ├── gsFavicon.js          # Favicon fetch and caching
 │       ├── gsMessages.js         # Content script messaging helpers
@@ -219,6 +220,7 @@ Status values returned:
 | `popup.html` | Quick actions: suspend/unsuspend current tab, selected tabs, all tabs; exclude current page/domain; link to settings and excluded management |
 | `options.html` | Settings: auto-suspend time, protection toggles, theme, sync. Links to `excluded.html` for whitelist management |
 | `excluded.html` | **New.** Full CRUD management of excluded URL rules with add/remove/import/export/test |
+| `health.html` | **New.** Suspended-tab heartbeat scan with recoverable/broken status and one-click recover actions |
 | `suspended.html` | The lightweight page that replaces a suspended tab |
 | `about.html` | Extension info and links |
 | `shortcuts.html` | Keyboard shortcut configuration guide |
@@ -390,16 +392,16 @@ Tab gains focus → tgs.resetAutoSuspendTimerForTab(tab)
 ### Build Process (Grunt)
 
 1. **Clean** — Remove previous `dist/` directory
-2. **Copy** — `src/` → `dist/tms/src/` (excluding test files and XCF source images)
+2. **Copy** — `src/` → `dist/extension/` (excluding test files and XCF source images)
 3. **String replace** — Disable debug flags (`debugInfo = false`, `debugError = false`)
 
-**Dev task** (`npm run dev` / `grunt dev`): runs steps 1–3, then enters watch mode — any change under `src/` triggers an incremental copy + string-replace to `dist/tms/src/`.
+**Dev task** (`npm run dev` / `grunt dev`): runs steps 1–3, then enters watch mode — any change under `src/` triggers an incremental copy + string-replace to `dist/extension/`.
 
 ### Loading for Development
 
 ```
 1. chrome://extensions → enable Developer mode
-2. Load unpacked → select src/ (for development) or dist/tms/src/ (for production testing)
+2. Load unpacked → select src/ (for development) or dist/extension/ (for production testing)
 3. Reload extension after JS changes (HTML/CSS changes are reflected immediately)
 ```
 
